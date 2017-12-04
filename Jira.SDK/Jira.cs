@@ -11,11 +11,15 @@ namespace Jira.SDK
 		internal IJiraClient Client { get { return _client; } }
 
 		public List<Field> Fields { get; private set; }
+        public List<IssueType> IssueTypes { get; private set; }
+        public List<Priority> Priorities { get; private set; }
 
-		public void Connect(IJiraClient client)
+        public void Connect(IJiraClient client)
 		{
 			_client = client;
             Fields = _client.GetFields();
+            IssueTypes = _client.GetIssueTypes();
+            Priorities = _client.GetPriorities();
 		}
 
         public void Connect(String url)

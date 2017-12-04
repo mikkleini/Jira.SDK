@@ -21,6 +21,8 @@ namespace Jira.SDK
         public enum JiraObjectEnum
         {
             Fields,
+            IssueTypes,
+            Priorities,
             Projects,
             Project,
             AssignableUser,
@@ -55,6 +57,8 @@ namespace Jira.SDK
         private Dictionary<JiraObjectEnum, String> _methods = new Dictionary<JiraObjectEnum, String>()
         {
             {JiraObjectEnum.Fields, String.Format("{0}/field/", JiraAPIServiceURI)},
+            {JiraObjectEnum.IssueTypes, String.Format("{0}/issuetype/", JiraAPIServiceURI)},
+            {JiraObjectEnum.Priorities, String.Format("{0}/priority/", JiraAPIServiceURI)},
             {JiraObjectEnum.Projects, String.Format("{0}/project/", JiraAPIServiceURI)},
             {JiraObjectEnum.Project, String.Format("{0}/project/{{projectKey}}/", JiraAPIServiceURI)},
             {JiraObjectEnum.ProjectVersions, String.Format("{0}/project/{{projectKey}}/versions/", JiraAPIServiceURI)},
@@ -120,6 +124,20 @@ namespace Jira.SDK
         public List<Field> GetFields()
         {
             return GetList<Field>(JiraObjectEnum.Fields);
+        }
+        #endregion
+
+        #region IssueTypes
+        public List<IssueType> GetIssueTypes()
+        {
+            return GetList<IssueType>(JiraObjectEnum.IssueTypes);
+        }
+        #endregion
+
+        #region Priorties
+        public List<Priority> GetPriorities()
+        {
+            return GetList<Priority>(JiraObjectEnum.Priorities);
         }
         #endregion
 
@@ -348,44 +366,86 @@ namespace Jira.SDK
         {
             IRestRequest request = new RestRequest(String.Format("{0}/issue", JiraAPIServiceURI), Method.POST);
             request.RequestFormat = DataFormat.Json;
+        
+            JObject json = new JObject();
+            JObject fieldsjson = new JObject();
+            json.Add("fields", fieldsjson);
 
-            JObject tempjson = JObject.FromObject(new
+            // Fill main fields if they are defined 
+            if (issueFields.Project != null)
             {
-                project = new
-                {
-                    id = issueFields.Project.ID
-                },
-                issuetype = new
-                {
-                    id = issueFields.IssueType.ID
-                },
-                summary = issueFields.Summary,
-                //description = issueFields.Description,
+                fieldsjson.Add("project", new JObject(new JProperty("id", issueFields.Project.ID)));
+            }
 
-                //User Reporter { get; set; }
-                //User Assignee { get; set; }
-            });
+            if (issueFields.IssueType != null)
+            {
+                fieldsjson.Add("issuetype", new JObject(new JProperty("id", issueFields.IssueType.ID)));
+            }
 
+            if (issueFields.Reporter != null)
+            {
+                fieldsjson.Add("reporter", new JObject(new JProperty("name", issueFields.Reporter.Name)));
+            }
+
+            if (issueFields.Assignee != null)
+            {
+                fieldsjson.Add("assignee", new JObject(new JProperty("name", issueFields.Assignee.Name)));
+            }
+
+            if (issueFields.Priority != null)
+            {
+                fieldsjson.Add("priority", new JObject(new JProperty("name", issueFields.Priority.Name)));
+            }
+
+            if (issueFields.Summary != null)
+            {
+                fieldsjson.Add(new JProperty("summary", issueFields.Summary));
+            }
+
+            if (issueFields.Description != null)
+            {
+                fieldsjson.Add(new JProperty("description", issueFields.Description));
+            }
+
+            if (issueFields.AffectsVersions != null)
+            {
+                JArray affverjson = new JArray();
+                fieldsjson.Add("versions", affverjson);                
+
+                foreach (ProjectVersion version in issueFields.AffectsVersions)
+                {
+                    affverjson.Add(new JObject(new JProperty("id", version.ID)));
+                }
+            }
+
+            if (issueFields.FixVersions != null)
+            {
+                JArray fixverjson = new JArray();
+                fieldsjson.Add("fixversions", fixverjson);
+
+                foreach (ProjectVersion version in issueFields.FixVersions)
+                {
+                    fixverjson.Add(new JObject(new JProperty("id", version.ID)));
+                }
+            }
+
+            // TODO What is it ?
             List<Field> fields = GetFields();
-            
 
             foreach (KeyValuePair<String, CustomField> customfield in issueFields.CustomFields)
             {
                 Field field = fields.Where(f => f.ID.Equals(customfield.Key)).FirstOrDefault();
                 
-                switch(field.Schema.Custom)
+                switch (field.Schema.Custom)
                 {
                     case "com.atlassian.jira.plugin.system.customfieldtypes:select":
-                        tempjson.Add(customfield.Key.ToLower(), JToken.FromObject(new { value = customfield.Value.Value }));
+                        fieldsjson.Add(customfield.Key.ToLower(), JToken.FromObject(new { value = customfield.Value.Value }));
                         break;
                     default:
-                        tempjson.Add(customfield.Key.ToLower(), customfield.Value.Value );
+                        fieldsjson.Add(customfield.Key.ToLower(), customfield.Value.Value );
                         break;
                 }
             }
-
-            JObject json = new JObject();
-            json.Add("fields", tempjson.Root);
 
             request.AddParameter("Application/Json", json.ToString(), ParameterType.RequestBody);
 

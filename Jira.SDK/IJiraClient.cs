@@ -24,8 +24,10 @@ namespace Jira.SDK
         bool DeleteGroupActor(string projectKey, Int32 id, String group);
 
         List<Field> GetFields();
+        List<IssueType> GetIssueTypes();
+        List<Priority> GetPriorities();
 
-		List<ProjectVersion> GetProjectVersions(String projectKey);
+        List<ProjectVersion> GetProjectVersions(String projectKey);
 
         List<ProjectComponent> GetProjectComponents(String projectKey);
 
