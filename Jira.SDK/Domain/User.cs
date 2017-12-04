@@ -71,5 +71,10 @@ namespace Jira.SDK
                 };
             }
         }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }

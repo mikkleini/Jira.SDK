@@ -138,5 +138,10 @@ namespace Jira.SDK.Domain
 
 			return userDetails;
 		}
-	}
+
+        public override string ToString()
+        {
+            return Name;
+        }
+    }
 }

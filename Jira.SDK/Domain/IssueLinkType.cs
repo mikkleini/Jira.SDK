@@ -23,5 +23,11 @@ namespace Jira.SDK.Domain
 		{
 			return (IssueLinkTypeEnum)Enum.Parse(typeof(IssueLinkTypeEnum), Name);
 		}
-	}
+
+
+        public override string ToString()
+        {
+            return Name;
+        }
+    }
 }

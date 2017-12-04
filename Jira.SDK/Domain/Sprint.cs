@@ -105,6 +105,11 @@ namespace Jira.SDK.Domain
 
 			return equals;
 		}
-		#endregion
-	}
+        #endregion
+
+        public override string ToString()
+        {
+            return Name;
+        }
+    }
 }

@@ -22,5 +22,11 @@ namespace Jira.SDK.Domain
         public String Description { get; set; }
         public string Expand { get; set; }
         public List<NotificationSchemeEvent> NotificationSchemeEvents { get; set; }
+
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }

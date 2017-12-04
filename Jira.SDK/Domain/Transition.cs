@@ -11,5 +11,10 @@ namespace Jira.SDK.Domain
         public Int32 ID { get; set; }
         public String Name { get; set; }
         public Status To { get; set; }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }

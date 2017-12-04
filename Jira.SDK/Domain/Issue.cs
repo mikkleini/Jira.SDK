@@ -508,6 +508,11 @@ namespace Jira.SDK.Domain
         }
 
         #endregion
+
+        public override string ToString()
+        {
+            return Key;
+        }
     }
 
     public class IssueFields

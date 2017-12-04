@@ -153,5 +153,10 @@ namespace Jira.SDK.Domain
         {
             return (obj is Project) && this.Key.Equals(((Project)obj).Key);
         }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }

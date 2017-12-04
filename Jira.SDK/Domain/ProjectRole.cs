@@ -15,6 +15,11 @@ namespace Jira.SDK.Domain
         public string Description { get; set; }
         public string Self { get; set; }
         public List<ProjectRoleActor> Actors { get; set; }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 
     public class ProjectRoleActor
@@ -23,5 +28,10 @@ namespace Jira.SDK.Domain
         public string DisplayName { get; set; }
         public string Type { get; set; }
         public string Name { get; set; }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }

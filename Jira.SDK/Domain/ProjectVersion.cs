@@ -35,5 +35,10 @@ namespace Jira.SDK.Domain
                 return _issues;
             }
         }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }

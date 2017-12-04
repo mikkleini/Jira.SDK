@@ -12,6 +12,11 @@ namespace Jira.SDK.Domain
 		public String Name { get; set; }
 		public Boolean Custom { get; set; }
         public FieldSchema Schema { get; set; }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 
     public class FieldSchema

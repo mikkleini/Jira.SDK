@@ -9,5 +9,10 @@ namespace Jira.SDK
     public class Subtask
     {
         public String Key { get; set; }
+
+        public override string ToString()
+        {
+            return Key;
+        }
     }
 }

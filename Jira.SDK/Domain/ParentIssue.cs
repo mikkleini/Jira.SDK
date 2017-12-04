@@ -9,5 +9,10 @@ namespace Jira.SDK
     public class ParentIssue
     {
         public String Key { get; set; }
+
+        public override string ToString()
+        {
+            return Key;
+        }
     }
 }
