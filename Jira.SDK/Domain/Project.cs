@@ -82,7 +82,8 @@ namespace Jira.SDK.Domain
             get
             {
                 return ProjectVersions.FirstOrDefault(
-                    vers => vers.StartDate.CompareTo(DateTime.Now) <= 0 && vers.ReleaseDate.CompareTo(DateTime.Now) > 0 && !vers.Archived);
+                    vers => vers.StartDate.CompareTo(DateTime.Now) <= 0 && vers.ReleaseDate.CompareTo(DateTime.Now) > 0 &&
+                        (vers.Archived.HasValue && !vers.Archived.Value));
             }
         }
 
@@ -131,17 +132,64 @@ namespace Jira.SDK.Domain
             return Epic.FromIssue(epicIssue);
         }
 
-
+        /// <summary>
+        /// Create new issue in project
+        /// </summary>
+        /// <param name="fields"></param>
+        /// <returns></returns>
         public Issue CreateIssue(IssueFields fields)
         {
-            fields.Project = new Project()
-            {
-                ID = this.ID
-            };
+            fields.Project = this;
             Issue issue = GetJira().Client.AddIssue(fields);
             issue.SetJira(this.GetJira());
             issue.Load();
             return issue;
+        }
+
+        /// <summary>
+        /// Update issue
+        /// </summary>
+        /// <param name="fields"></param>
+        /// <returns></returns>
+        public Issue UpdateIssue(IssueFields fields)
+        {
+            fields.Project = this;
+            Issue issue = GetJira().Client.UpdateIssue(fields);
+            issue.SetJira(this.GetJira());
+            issue.Load();
+            return issue;
+        }
+
+        /// <summary>
+        /// Delete issue
+        /// </summary>
+        /// <param name="issue"></param>
+        /// <returns></returns>
+        public bool DeleteIssue(Issue issue)
+        {
+            return GetJira().Client.DeleteIssue(issue);
+        }
+
+        /// <summary>
+        /// Create new version in project
+        /// </summary>
+        /// <param name="version"></param>
+        /// <returns></returns>
+        public ProjectVersion CreateProjectVersion(ProjectVersion version)
+        {
+            version.Project = this;
+            return GetJira().Client.AddProjectVersion(version);
+        }
+
+        /// <summary>
+        /// Create new component in project
+        /// </summary>
+        /// <param name="component"></param>
+        /// <returns></returns>
+        public ProjectComponent CreateProjectComponent(ProjectComponent component)
+        {
+            component.Project = this;
+            return GetJira().Client.AddProjectComponent(component);
         }
 
         public override int GetHashCode()

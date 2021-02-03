@@ -139,6 +139,18 @@ namespace Jira.SDK.Domain
 			return userDetails;
 		}
 
+        public Sprint CreateSprint(Sprint sprint)
+        {
+            Sprint newSprint = _jira.Client.AddSprint(this.ID, sprint);
+
+            if (newSprint != null)
+            {
+                newSprint.SetJira(_jira);
+            }
+
+            return newSprint;
+        }
+
         public override string ToString()
         {
             return Name;

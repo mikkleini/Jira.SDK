@@ -109,19 +109,21 @@ namespace Jira.SDK
         }
 
         public Issue GetIssue(String key)
-		{
-			Issue issue = _client.GetIssue(key);
-            if(String.IsNullOrEmpty(issue.Key))
-            {
-                return null;
-            }
-			if (issue != null)
-			{
-				issue.SetJira(this);
-			}
+        {
+            Issue issue = _client.GetIssue(key);
 
-			return issue;
-		}
+            if (issue != null)
+            {
+                if (String.IsNullOrEmpty(issue.Key))
+                {
+                    return null;
+                }
+
+                issue.SetJira(this);
+            }
+
+            return issue;
+        }
 
         public List<Issue> SearchIssues(String jql, Int32 maxResults = 700)
         {

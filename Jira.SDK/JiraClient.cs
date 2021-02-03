@@ -4,6 +4,7 @@ using RestSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using RestSharp.Extensions;
@@ -52,7 +53,7 @@ namespace Jira.SDK
         private RestClient Client { get; set; }
 
         private const String JiraAPIServiceURI = "/rest/api/latest";
-        private const String JiraAgileServiceURI = "/rest/greenhopper/latest";
+        private const String JiraAgileServiceURI = "/rest/agile/latest";
 
         private Dictionary<JiraObjectEnum, String> _methods = new Dictionary<JiraObjectEnum, String>()
         {
@@ -70,11 +71,11 @@ namespace Jira.SDK
             {JiraObjectEnum.User, String.Format("{0}/user/", JiraAPIServiceURI)},
             {JiraObjectEnum.Group, String.Format("{0}/group", JiraAPIServiceURI) },
             {JiraObjectEnum.Filters, String.Format("{0}/filter/favourite", JiraAPIServiceURI)},
-            {JiraObjectEnum.AgileBoards, String.Format("{0}/rapidviews/list/", JiraAgileServiceURI)},
-            {JiraObjectEnum.Sprints, String.Format("{0}/sprintquery/{{boardID}}/", JiraAgileServiceURI)},
-            {JiraObjectEnum.BacklogSprints, String.Format("{0}/xboard/plan/backlog/data.json", JiraAgileServiceURI)},
-            {JiraObjectEnum.Sprint, String.Format("{0}/rapid/charts/sprintreport/", JiraAgileServiceURI)},
-            {JiraObjectEnum.SprintIssues, String.Format("{0}/sprintquery/", JiraAgileServiceURI)},
+            {JiraObjectEnum.AgileBoards, String.Format("{0}/board", JiraAgileServiceURI)},
+            {JiraObjectEnum.Sprints, String.Format("{0}/board/{{boardId}}/sprint", JiraAgileServiceURI)},
+            {JiraObjectEnum.BacklogSprints, String.Format("{0}/xboard/plan/backlog/data.json", JiraAgileServiceURI)}, //  TODO
+            {JiraObjectEnum.Sprint, String.Format("{0}/sprint/{{sprintId}}", JiraAgileServiceURI)},
+            {JiraObjectEnum.SprintIssues, String.Format("{0}/sprint/{{sprintId}}/issue", JiraAgileServiceURI)},
             {JiraObjectEnum.ProjectComponents, String.Format("{0}/project/{{projectKey}}/components/", JiraAPIServiceURI)},
             {JiraObjectEnum.IssueSecuritySchemes, String.Format("{0}/issuesecurityschemes/", JiraAPIServiceURI)},
             {JiraObjectEnum.PermissionScheme, String.Format("{0}/permissionscheme/", JiraAPIServiceURI)},
@@ -238,6 +239,70 @@ namespace Jira.SDK
             return GetList<ProjectVersion>(JiraObjectEnum.ProjectVersions,
                                keys: new Dictionary<string, string>() { { "projectKey", projectKey } });
         }
+
+        /// <summary>
+        /// Add project version
+        /// </summary>
+        /// <param name="version"></param>
+        /// <returns></returns>
+        public ProjectVersion AddProjectVersion(ProjectVersion version)
+        {           
+            // Create JSON content
+            JObject json = new JObject();
+
+            // Fill mandatory fields
+            json.Add("project", version.Project.Key);
+            json.Add("name", version.Name);
+
+            // Fill optional fields
+            if (version.Archived.HasValue)
+            {
+                json.Add("archived", version.Archived.Value);
+            }
+
+            if (version.Released.HasValue)
+            {
+                json.Add("released", version.Released.Value);
+            }
+
+            if (version.Description != null)
+            {
+                json.Add("description", version.Description);
+            }
+
+            // StartDate is not support by JIRA
+
+            if (version.ReleaseDate != null)
+            {
+                // Skip "empty" date
+                if (!version.ReleaseDate.Equals(default(DateTime)))
+                {
+                    json.Add("releaseDate", version.ReleaseDate.ToString("yyyy-MM-dd"));
+                }
+            }
+
+            // Create request
+            IRestRequest request = new RestRequest(String.Format("{0}/version", JiraAPIServiceURI), Method.POST);
+            request.RequestFormat = DataFormat.Json;
+            request.AddParameter("Application/Json", json.ToString(), ParameterType.RequestBody);
+
+            // Get response
+            IRestResponse<ProjectVersion> response = Client.Post<ProjectVersion>(request);
+            if (response.ErrorException != null)
+            {
+                throw response.ErrorException;
+            }
+            if (response.ResponseStatus != ResponseStatus.Completed)
+            {
+                throw new Exception(response.ErrorMessage);
+            }
+            if (response.StatusCode != System.Net.HttpStatusCode.Created)
+            {
+                throw new Exception(response.StatusDescription, new Exception(response.Content));
+            }
+
+            return response.Data;
+        }
         #endregion
 
         #region Project components
@@ -245,6 +310,49 @@ namespace Jira.SDK
         {
             return GetList<ProjectComponent>(JiraObjectEnum.ProjectComponents,
                                keys: new Dictionary<string, string>() { { "projectKey", projectKey } });
+        }
+
+        /// <summary>
+        /// Add component to project
+        /// </summary>
+        /// <param name="component"></param>
+        /// <returns></returns>
+        public ProjectComponent AddProjectComponent(ProjectComponent component)
+        {
+            // Create JSON content
+            JObject json = new JObject();
+
+            // Fill mandatory fields
+            json.Add("project", component.Project.Key);
+            json.Add("name", component.Name);
+
+            // Fill optional fields
+            if (component.Description != null)
+            {
+                json.Add("description", component.Description);
+            }
+
+            // Create request
+            IRestRequest request = new RestRequest(String.Format("{0}/component", JiraAPIServiceURI), Method.POST);
+            request.RequestFormat = DataFormat.Json;
+            request.AddParameter("Application/Json", json.ToString(), ParameterType.RequestBody);
+
+            // Get response
+            IRestResponse<ProjectComponent> response = Client.Post<ProjectComponent>(request);
+            if (response.ErrorException != null)
+            {
+                throw response.ErrorException;
+            }
+            if (response.ResponseStatus != ResponseStatus.Completed)
+            {
+                throw new Exception(response.ErrorMessage);
+            }
+            if (response.StatusCode != System.Net.HttpStatusCode.Created)
+            {
+                throw new Exception(response.StatusDescription, new Exception(response.Content));
+            }
+
+            return response.Data;
         }
         #endregion
 
@@ -319,9 +427,112 @@ namespace Jira.SDK
             return GetItem<SprintResult>(JiraObjectEnum.Sprint, parameters: new Dictionary<String, String>() { { "rapidViewId", agileBoardID.ToString() }, { "sprintId", sprintID.ToString() } }).Sprint;
         }
 
+        /// <summary>
+        /// Add new sprint
+        /// </summary>
+        /// <param name="sprint"></param>
+        /// <returns></returns>
+        public Sprint AddSprint(Int32 agileBoardID, Sprint sprint)
+        {
+            // Create JSON content
+            JObject json = new JObject();
+
+            // Fill mandatory fields
+            json.Add("name", sprint.Name);
+            json.Add("originBoardId", agileBoardID);
+
+            // Set start date only if it's defined
+            if (sprint.StartDate != null)
+            {
+                // Skip "empty" date
+                if (!sprint.StartDate.Equals(default(DateTime)))
+                {
+                    json.Add("startDate", sprint.StartDate.ToString("s"));
+                }
+            }
+
+            // Set start date only if it's defined
+            if (sprint.EndDate != null)
+            {
+                // Skip "empty" date
+                if (!sprint.EndDate.Equals(default(DateTime)))
+                {
+                    json.Add("endDate", sprint.EndDate.ToString("s"));
+                }
+            }
+
+            // Create request
+            IRestRequest request = new RestRequest(String.Format("{0}/sprint", JiraAgileServiceURI), Method.POST);
+            request.RequestFormat = DataFormat.Json;
+            request.AddParameter("Application/Json", json.ToString(), ParameterType.RequestBody);
+
+            IRestResponse<Sprint> response = Client.Post<Sprint>(request);
+
+            if (response.ErrorException != null)
+            {
+                throw response.ErrorException;
+            }
+            if (response.ResponseStatus != ResponseStatus.Completed)
+            {
+                throw new Exception(response.ErrorMessage);
+            }
+            if (response.StatusCode != System.Net.HttpStatusCode.Created)
+            {
+                throw new Exception(response.StatusDescription, new Exception(response.Content));
+            }
+
+            return response.Data;
+        }
+
         public List<Issue> GetIssuesFromSprint(int sprintID)
         {
             return SearchIssues(String.Format("Sprint = {0}", sprintID));
+        }
+
+        public List<String> GetIssueKeysFromSprint(int sprintID)
+        {
+            return GetItem<SprintIssues>(JiraObjectEnum.SprintIssues,
+                parameters: new Dictionary<String, String>() { ["fields"] = "key", ["maxResults"] = "-1" },
+                keys: new Dictionary<String, String>() { ["sprintId"] = sprintID.ToString() }).Issues.Select(i => i.Key).ToList();
+        }
+
+        /// <summary>
+        /// Add issues to sprint
+        /// </summary>
+        /// <param name="sprintID"></param>
+        /// <param name="issues"></param>
+        /// <returns></returns>
+        public bool AddIssuesToSprint(int sprintID, List<Issue> issues)
+        {
+            // Create JSON content
+            JObject json = new JObject();
+
+            // Fill up issues list
+            JArray issuesjson = new JArray();
+            json.Add("issues", issuesjson);
+            issues.ForEach(i => issuesjson.Add(i.Key));
+            
+            // Create request
+            IRestRequest request = new RestRequest(String.Format("{0}/sprint/{1}/issue", JiraAgileServiceURI, sprintID), Method.POST);
+            request.RequestFormat = DataFormat.Json;
+            request.AddParameter("Application/Json", json.ToString(), ParameterType.RequestBody);
+
+            IRestResponse response = Client.Post(request);
+
+            if (response.ErrorException != null)
+            {
+                throw response.ErrorException;
+            }
+            if (response.ResponseStatus != ResponseStatus.Completed)
+            {
+                throw new Exception(response.ErrorMessage);
+            }
+            if (response.StatusCode != System.Net.HttpStatusCode.NoContent)
+            {
+                throw new Exception(response.StatusDescription, new Exception(response.Content));
+            }
+
+            return true;
         }
         #endregion
 
@@ -362,11 +573,13 @@ namespace Jira.SDK
             return SearchIssues(String.Format("project = '{0}' AND Type = Epic and 'Epic Name' = '{1}'", projectName, epicName)).FirstOrDefault();
         }
 
+        /// <summary>
+        /// Add issue to project
+        /// </summary>
+        /// <param name="issueFields"></param>
+        /// <returns></returns>
         public Issue AddIssue(IssueFields issueFields)
         {
-            IRestRequest request = new RestRequest(String.Format("{0}/issue", JiraAPIServiceURI), Method.POST);
-            request.RequestFormat = DataFormat.Json;
-        
             JObject json = new JObject();
             JObject fieldsjson = new JObject();
             json.Add("fields", fieldsjson);
@@ -410,7 +623,7 @@ namespace Jira.SDK
             if (issueFields.AffectsVersions != null)
             {
                 JArray affverjson = new JArray();
-                fieldsjson.Add("versions", affverjson);                
+                fieldsjson.Add("versions", affverjson);
 
                 foreach (ProjectVersion version in issueFields.AffectsVersions)
                 {
@@ -421,11 +634,22 @@ namespace Jira.SDK
             if (issueFields.FixVersions != null)
             {
                 JArray fixverjson = new JArray();
-                fieldsjson.Add("fixversions", fixverjson);
+                fieldsjson.Add("fixVersions", fixverjson);
 
                 foreach (ProjectVersion version in issueFields.FixVersions)
                 {
                     fixverjson.Add(new JObject(new JProperty("id", version.ID)));
+                }
+            }
+
+            if (issueFields.Components != null)
+            {
+                JArray componentsjson = new JArray();
+                fieldsjson.Add("components", componentsjson);
+
+                foreach (Component component in issueFields.Components)
+                {
+                    componentsjson.Add(new JObject(new JProperty("id", component.ID.ToString())));
                 }
             }
 
@@ -447,9 +671,53 @@ namespace Jira.SDK
                 }
             }
 
+            // Create request
+            IRestRequest request = new RestRequest(String.Format("{0}/issue", JiraAPIServiceURI), Method.POST);
+            request.RequestFormat = DataFormat.Json;
             request.AddParameter("Application/Json", json.ToString(), ParameterType.RequestBody);
 
+            // Get response
             IRestResponse<Issue> response = Client.Post<Issue>(request);
+            if (response.ErrorException != null)
+            {
+                throw response.ErrorException;
+            }
+            if (response.ResponseStatus != ResponseStatus.Completed)
+            {
+                throw new Exception(response.ErrorMessage);
+            }
+            if (response.StatusCode != System.Net.HttpStatusCode.Created)
+            {
+                throw new Exception(response.StatusDescription, new Exception(response.Content));
+            }
+
+            return response.Data;
+        }
+
+        /// <summary>
+        /// Update issue
+        /// </summary>
+        /// <param name="issueFields"></param>
+        /// <returns></returns>
+        public Issue UpdateIssue(IssueFields issueFields)
+        {
+            // TODO
+            return null;
+        }
+
+        /// <summary>
+        /// Delete issue
+        /// </summary>
+        /// <param name="issue"></param>
+        /// <returns></returns>
+        public bool DeleteIssue(Issue issue)
+        {
+            // Create request
+            IRestRequest request = new RestRequest(String.Format("{0}/issue/{1}", JiraAPIServiceURI, issue.Key), Method.DELETE);
+            request.AddParameter("deleteSubtasks", "true");
+            request.RequestFormat = DataFormat.Json;
+
+            IRestResponse response = Client.Execute(request);
 
             if (response.ErrorException != null)
             {
@@ -459,8 +727,12 @@ namespace Jira.SDK
             {
                 throw new Exception(response.ErrorMessage);
             }
+            if (response.StatusCode != System.Net.HttpStatusCode.NoContent)
+            {
+                throw new Exception(response.StatusDescription, new Exception(response.Content));
+            }
 
-            return response.Data;
+            return true;
         }
 
         public Comment AddCommentToIssue(Issue issue, Comment comment)
@@ -520,6 +792,54 @@ namespace Jira.SDK
         }
         #endregion
 
+        #region Attachement
+
+        /// <summary>
+        /// Download attachement
+        /// </summary>
+        /// <param name="attachement"></param>
+        public void DownloadAttachement(Attachement attachement)
+        {
+            // Download attachement data
+            IRestRequest request = new RestRequest(attachement.Content, Method.GET);
+            attachement.Data = Client.DownloadData(request);
+        }
+
+        /// <summary>
+        /// Add attachement to issue
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public Attachement AddAttachementToIssue(Issue issue, Attachement attachement)
+        {
+            // Create upload request
+            IRestRequest request = new RestRequest(String.Format("{0}/issue/{1}/attachments", JiraAPIServiceURI, issue.Key), Method.POST);
+            request.RequestFormat = DataFormat.Json;
+            request.AddHeader("X-Atlassian-Token", "no-check");
+            request.AddHeader("Content-Type", "multipart/form-data" + (String.IsNullOrEmpty(attachement.MimeType) ? "" : "; " + attachement.MimeType));
+            request.AddFileBytes("file", attachement.Data, attachement.Filename);
+
+            // Get response
+            IRestResponse<Attachements> response = Client.Post<Attachements>(request);
+
+            if (response.ErrorException != null)
+            {
+                throw response.ErrorException;
+            }
+            if (response.ResponseStatus != ResponseStatus.Completed)
+            {
+                throw new Exception(response.ErrorMessage);
+            }
+            if (response.StatusCode != System.Net.HttpStatusCode.OK)
+            {
+                throw new Exception(response.StatusDescription, new Exception(response.Content));
+            }
+
+            // Parse            
+            return response.Data.First();
+        }
+        #endregion
+
         #region Worklog
         public WorklogSearchResult GetWorkLogs(String issueKey)
         {
@@ -569,6 +889,10 @@ namespace Jira.SDK
             {
                 throw new Exception(response.ErrorMessage);
             }
+            if (response.StatusCode != System.Net.HttpStatusCode.NoContent)
+            {
+                throw new Exception(response.StatusDescription, new Exception(response.Content));
+            }
         }
         #endregion
 
@@ -586,7 +910,8 @@ namespace Jira.SDK
 
         private T Execute<T>(JiraObjectEnum objectType, Dictionary<String, String> parameters = null, Dictionary<String, String> keys = null) where T : new()
         {
-            IRestResponse<T> response = Client.Execute<T>(GetRequest(objectType, parameters ?? new Dictionary<String, String>(), keys ?? new Dictionary<String, String>()));
+            IRestRequest request = GetRequest(objectType, parameters ?? new Dictionary<String, String>(), keys ?? new Dictionary<String, String>());
+            IRestResponse<T> response = Client.Execute<T>(request);
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {

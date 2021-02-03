@@ -45,6 +45,37 @@ namespace Jira.SDK.Domain
 			return _issues;
 		}
 
+        private List<String> _issueKeys;
+        public List<String> GetIssueKeys()
+        {
+            if (_issueKeys == null)
+            {
+               _issueKeys = _jira.Client.GetIssueKeysFromSprint(this.ID);
+            }
+            return _issueKeys;
+        }
+
+        /// <summary>
+        /// Add list of issue to sprint
+        /// </summary>
+        /// <param name="issues"></param>
+        public bool AddIssues(List<Issue> issues)
+        {
+            if (_jira.Client.AddIssuesToSprint(this.ID, issues))
+            {
+                if (_issues != null)
+                {
+                    _issues.AddRange(issues);
+                }
+
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
 		private List<User> _users;
 		public List<User> GetAssignableUsers(List<Issue> additionalIssues)
 		{

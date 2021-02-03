@@ -21,7 +21,15 @@ namespace Jira.SDK.Domain
 
 		public IssueLinkTypeEnum ToEnum()
 		{
-			return (IssueLinkTypeEnum)Enum.Parse(typeof(IssueLinkTypeEnum), Name);
+            IssueLinkTypeEnum value;
+            if (Enum.TryParse<IssueLinkTypeEnum>(Name, out value))
+            {
+                return value;
+            }
+            else
+            {
+                return default(IssueLinkTypeEnum);
+            }
 		}
 
 

@@ -14,8 +14,8 @@ namespace Jira.SDK.Domain
 
         public Project Project { get; set; }
 
-        public Boolean Archived { get; set; }
-        public Boolean Released { get; set; }
+        public Boolean? Archived { get; set; }
+        public Boolean? Released { get; set; }
 
         public DateTime StartDate { get; set; }
         public DateTime ReleaseDate { get; set; }

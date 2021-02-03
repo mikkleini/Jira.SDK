@@ -33,12 +33,6 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="RestSharp, Version=105.2.3.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\RestSharp.105.2.3\lib\net45\RestSharp.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net.Http" />
@@ -52,10 +46,12 @@
   <ItemGroup>
     <Compile Include="Domain\AgileBoard.cs" />
     <Compile Include="Domain\AgileBoardView.cs" />
+    <Compile Include="Domain\Attachement.cs" />
     <Compile Include="Domain\CustomField.cs" />
     <Compile Include="Domain\Epic.cs" />
     <Compile Include="Domain\Field.cs" />
     <Compile Include="Domain\GroupResult.cs" />
+    <Compile Include="Domain\IssueFields.cs" />
     <Compile Include="Domain\NotificationSchemeEvent.cs" />
     <Compile Include="Domain\NotificationScheme.cs" />
     <Compile Include="Domain\PermissionScheme.cs" />
@@ -76,6 +72,7 @@
     <Compile Include="Domain\ProjectRole.cs" />
     <Compile Include="Domain\Component.cs" />
     <Compile Include="Domain\Resolution.cs" />
+    <Compile Include="Domain\SprintIssues.cs" />
     <Compile Include="Domain\SprintResult.cs" />
     <Compile Include="Domain\Status.cs" />
     <Compile Include="Domain\SubTask.cs" />
@@ -99,7 +96,12 @@
     <WCFMetadata Include="Service References\" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>10.0.3</Version>
+    </PackageReference>
+    <PackageReference Include="RestSharp">
+      <Version>105.2.3</Version>
+    </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
